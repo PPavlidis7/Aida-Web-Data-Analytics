@@ -138,6 +138,10 @@ def get_network_values(given_network, directed=False):
             sum(given_network_out_degrees.values()) / len(given_network_out_degrees)
         ))
         plot_degrees(given_network, True)
+        _graph_connected_components = nx.strongly_connected_components(given_network)
+        longest_connected_subgraph = max(_graph_connected_components, key=len)
+        new_smaller_graph = given_network.subgraph(list(longest_connected_subgraph))
+        print('Network diameter: ', nx.algorithms.distance_measures.diameter(new_smaller_graph))
     else:
         __directed_graph = given_network.to_directed()
         print('Number of undirected edges in the network: ', nx.number_of_edges(given_network))
