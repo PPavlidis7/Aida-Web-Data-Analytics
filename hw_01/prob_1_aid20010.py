@@ -58,6 +58,12 @@ def plot_degrees(given_network, directed=False):
         kmin = min(degrees)
         kmax = max(degrees)
 
+        # in order to fix RuntimeWarning: divide by zero encountered in log10
+        if kmax == 0:
+            kmax = 0.000000001
+        if kmin == 0:
+            kmin = 0.000000001
+
         # create plot log scale
         # Get 10 logarithmically spaced bins between kmin and kmax
         bin_edges = np.logspace(np.log10(kmin), np.log10(kmax), num=10)
@@ -77,9 +83,9 @@ def plot_degrees(given_network, directed=False):
         __plot_helper_linear(x, density, 'Degree distribution for undirected graph in linear scale')
     else:
         degrees_to_plot = {
-            'Degree distribution for directed graph': [given_network.degree(node) for node in given_network],
-            'In-degree distribution for directed graph': [given_network.in_degree(node) for node in given_network],
-            'Out-degree distribution for directed graph': [given_network.out_degree(node) for node in given_network]
+            'Degree distribution for directed graph ': [given_network.degree(node) for node in given_network],
+            'In-degree distribution for directed graph ': [given_network.in_degree(node) for node in given_network],
+            'Out-degree distribution for directed graph ': [given_network.out_degree(node) for node in given_network]
         }
         for title, degrees in degrees_to_plot.items():
             kmin = min(degrees)
@@ -138,10 +144,14 @@ def get_network_values(given_network, directed=False):
             sum(given_network_out_degrees.values()) / len(given_network_out_degrees)
         ))
         plot_degrees(given_network, True)
-        _graph_connected_components = nx.strongly_connected_components(given_network)
-        longest_connected_subgraph = max(_graph_connected_components, key=len)
-        new_smaller_graph = given_network.subgraph(list(longest_connected_subgraph))
-        print('Network diameter: ', nx.algorithms.distance_measures.diameter(new_smaller_graph))
+        try:
+            print('Network diameter: ', nx.algorithms.distance_measures.diameter(given_network))
+        except nx.exception.NetworkXError:
+            print('Found infinite path length because the digraph is not strongly connected')
+            print('I will find diameter for the largest connected subgraph')
+            longest_connected_subgraph = max(nx.strongly_connected_components(given_network), key=len)
+            new_smaller_graph = given_network.subgraph(list(longest_connected_subgraph))
+            print('Network diameter: ', nx.algorithms.distance_measures.diameter(new_smaller_graph))
     else:
         __directed_graph = given_network.to_directed()
         print('Number of undirected edges in the network: ', nx.number_of_edges(given_network))
@@ -150,15 +160,20 @@ def get_network_values(given_network, directed=False):
         print('Number of of  edges: :', nx.number_of_edges(given_network))
         print('The average degree: %f' % (sum(dict(given_network.degree).values()) / len(dict(given_network.degree))))
         plot_degrees(given_network)
+        print('Network diameter: ', nx.algorithms.distance_measures.diameter(given_network))
+        try:
+            print('Network diameter: ', nx.algorithms.distance_measures.diameter(given_network))
+        except nx.exception.NetworkXError:
+            print('Found infinite path length because the digraph is not strongly connected')
+            print('I will find diameter for the largest connected subgraph')
+            longest_connected_subgraph = max(nx.connected_components(given_network), key=len)
+            new_smaller_graph = given_network.subgraph(list(longest_connected_subgraph))
+            print('Network diameter: ', nx.algorithms.distance_measures.diameter(new_smaller_graph))
 
     print(
         'The min and max node degree: %d and %d' % (
             min(dict(given_network.degree).items(), key=operator.itemgetter(1))[1],
             max(dict(given_network.degree).items(), key=operator.itemgetter(1))[1]))
-    # try:
-    #     print('Network diameter: ', nx.algorithms.distance_measures.diameter(given_network))
-    # except nx.exception.NetworkXError:
-    #     print('Found infinite path length because the digraph is not strongly connected')
 
 
 def main():
