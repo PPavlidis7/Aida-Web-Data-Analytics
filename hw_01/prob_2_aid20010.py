@@ -1,4 +1,5 @@
 import operator
+from textwrap import wrap
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -19,7 +20,7 @@ def __plot_helper_log(x, density, title):
     plt.plot(x, density, marker='o', linestyle='none')
     plt.xlabel(r"degree $k$", fontsize=16)
     plt.ylabel(r"$P(k)$", fontsize=16)
-    plt.title(title)
+    plt.title("\n".join(wrap(title)))
     # remove right and top boundaries because they're ugly
     ax = plt.gca()
     ax.spines['right'].set_visible(False)
@@ -35,7 +36,7 @@ def __plot_helper_linear(x, density, title):
     plt.loglog(x, density, marker='o', linestyle='none')
     plt.xlabel(r"degree $k$", fontsize=16)
     plt.ylabel(r"$P(k)$", fontsize=16)
-    plt.title(title)
+    plt.title("\n".join(wrap(title)))
     # remove right and top boundaries because they're ugly
     ax = plt.gca()
     ax.spines['right'].set_visible(False)
@@ -46,7 +47,7 @@ def __plot_helper_linear(x, density, title):
     plt.show()
 
 
-def plot_degrees(given_network):
+def plot_degrees(given_network, title):
     degrees = [given_network.degree(node) for node in given_network]
     kmin = min(degrees)
     kmax = max(degrees)
@@ -65,7 +66,7 @@ def plot_degrees(given_network):
     # "x" should be midpoint (IN LOG SPACE) of each bin
     log_be = np.log10(bin_edges)
     x = 10 ** ((log_be[1:] + log_be[:-1]) / 2)
-    __plot_helper_log(x, density, 'Degree distribution for graph in log scale')
+    __plot_helper_log(x, density, 'Degree distribution for {} in log scale'.format(title))
 
     # Get 20 logarithmically spaced bins between kmin and kmax
     bin_edges = np.linspace(kmin, kmax, num=10)
@@ -73,7 +74,7 @@ def plot_degrees(given_network):
     density, _ = np.histogram(degrees, bins=bin_edges, density=True)
     log_be = np.log10(bin_edges)
     x = 10 ** ((log_be[1:] + log_be[:-1]) / 2)
-    __plot_helper_linear(x, density, 'Degree distribution for graph in linear scale')
+    __plot_helper_linear(x, density, 'Degree distribution for {} in linear scale'.format(title))
 
 
 def generate_erdos_renyi_network(number_of_nodes):
@@ -82,7 +83,7 @@ def generate_erdos_renyi_network(number_of_nodes):
 
 
 def generate_network_with_power_law_distribution(number_of_nodes):
-    __graph = nx.generators.random_graphs.powerlaw_cluster_graph(number_of_nodes, 3, 0.0005)
+    __graph = nx.generators.random_graphs.powerlaw_cluster_graph(number_of_nodes, 3, 0.0004)
     get_network_characteristics(__graph, 'Network with power-law distribution')
 
 
@@ -114,7 +115,7 @@ def get_network_characteristics(given_network, title):
         longest_connected_subgraph = max(nx.connected_components(given_network), key=len)
         new_smaller_graph = given_network.subgraph(list(longest_connected_subgraph))
         print('Network diameter: ', nx.algorithms.distance_measures.diameter(new_smaller_graph))
-    plot_degrees(given_network)
+    plot_degrees(given_network, title)
     print('\n')
 
 
