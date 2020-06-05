@@ -334,7 +334,7 @@ graph [
   ]
   node [
     id 56
-    label "atrios.blogspot.com/ "
+    label "atrios.blogspot.com/"
     value 0
     source "LabeledManually"
   ]
@@ -664,7 +664,7 @@ graph [
   ]
   node [
     id 111
-    label "brunon.blogspot.com "
+    label "brunon.blogspot.com"
     value 0
     source "LabeledManually"
   ]

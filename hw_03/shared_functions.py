@@ -1,3 +1,4 @@
+from math import ceil
 from textwrap import wrap
 
 import community
@@ -21,6 +22,7 @@ def __purity_score(ground_truth, results, graph):
 
 
 def __calculate_modularity(graph, results):
+    # group nodes by community_id
     grouped_members = {}
     for community_id in set(results.values()):
         grouped_members[community_id] = set()
@@ -30,14 +32,17 @@ def __calculate_modularity(graph, results):
 
     communities = [frozenset(__community) for __community in grouped_members.values()]
 
-    # take the graph which contains communities' nodes
+    # take the subgraph which contains communities' nodes
     __sub_graph = graph.subgraph(list(results.keys())).copy()
     return nx.algorithms.community.quality.modularity(__sub_graph, communities)
 
 
 def __calculate_tp_tn_fn_fp(ground_truth, results):
+    # calculate tp, tn, fn and fp base on 23th slide from 4th lecture
+    # every node that has not placed to a community is counted as fn
     fn = len({node_id for node_id in ground_truth if node_id not in results})
     tp, tn, fp = 0, 0, 0
+    # a set to be sure that each pair is checked only once
     already_checked = set()
     for node_id, __community in ground_truth.items():
         if node_id not in results:
@@ -48,13 +53,13 @@ def __calculate_tp_tn_fn_fp(ground_truth, results):
             if second_node_id != node_id and (node_id, second_node_id) not in already_checked and \
                     (second_node_id, node_id) not in already_checked:
                 already_checked.add((node_id, second_node_id))
-                if results[node_id] != results[second_node_id]:
-                    if __community == second_community:
+                if __community != second_community:  # if nodes are not similar
+                    if results[node_id] == results[second_node_id]:  # if nodes are assigned to same community
                         fp += 1
                     else:
                         tn += 1
-                else:
-                    if __community == second_community:
+                else:  # if nodes are similar
+                    if results[node_id] == results[second_node_id]:  # if nodes are assigned to same community
                         tp += 1
                     else:
                         fn += 1
@@ -84,7 +89,7 @@ def get_clique_percolation_communities_metrics(ground_truth, clique_percolation_
     tp, tn, fn, fp = __calculate_tp_tn_fn_fp(ground_truth, clique_percolation_communities)
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
-    print("Clique percolation metrics")
+    print("Clique percolation metrics:")
     __print_metrics_results(recall, precision, purity, modularity)
     __visualize_communities(graph, clique_percolation_communities, pos, 'Clique percolation')
 
@@ -127,7 +132,7 @@ def visualize_ground_truth(graph, ground_truth, pos):
 
 
 def __visualize_communities(graph, communities, pos, title):
-    # in case communities does not have all nodes
+    # in case communities do not have all nodes
     communities_to_show = {-1: []}
     for node_id in graph.nodes:
         if node_id not in communities:
@@ -137,6 +142,7 @@ def __visualize_communities(graph, communities, pos, title):
                 communities_to_show[communities[node_id]] = []
             communities_to_show[communities[node_id]].append(node_id)
 
+    # generate legend values
     label_legend = {}
     for __community in list(communities_to_show.keys()):
         if __community != -1:
@@ -145,7 +151,8 @@ def __visualize_communities(graph, communities, pos, title):
             label_legend[__community] = "Without Community"
 
     plt.axis('off')
-    plt.figure(figsize=(15, 15))
+    fig = plt.figure(figsize=(15, 15))
+    # in order to map string to color
     vmin = min(list(map(int, label_legend.keys())))
     vmax = max(list(map(int, label_legend.keys())))
     norm = Normalize(vmin=vmin, vmax=vmax)
@@ -158,5 +165,7 @@ def __visualize_communities(graph, communities, pos, title):
     nx.draw_networkx_edges(graph, pos, alpha=0.3)
     plt.title("\n".join(wrap(title)))
 
-    plt.legend(scatterpoints=1)
+    # place legend at left side of plot in order to not cover part of plot
+    plt.legend(ncol=ceil(len(label_legend) / 50), labelspacing=0.05, bbox_to_anchor=(0, 0), loc="lower right",
+               fancybox=True, shadow=True)
     plt.show()
